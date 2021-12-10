@@ -177,6 +177,7 @@ class exposure_panel:
         self.exposure_slider.value = (self.exposure_slider.value * u.Unit(old)).to(new).value
         self.exposure_slider.title = 'Exposure ['+new+']'
         self.exposure_active_flag = True
+        #res.vs_plot.xaxis.axis_label = 'exposure ('+new+')'
 
     def slider_callback(self, attr, old, new):
         if self.target.value == 'signal to noise ratio':
@@ -543,7 +544,7 @@ class results_panel:
             toolbar_location=None,
             width=500, 
             height=100, 
-            tooltips=[('S/N', '$y{0.00}'), ('exp (s)', '$x{0}')], 
+            tooltips=[('y', '$y{0.0}'), ('x', '$x{0}')], 
             sizing_mode='scale_width',
             name='vs_plot'
         )
@@ -561,7 +562,6 @@ class results_panel:
             toolbar_sticky=False, 
             width=450, 
             height=100,
-            tooltips=[('S/N', '$y{0.0}'), ('λ (nm)', '$x{0}')], 
             sizing_mode='scale_both'
         )
         self.snr_plot.toolbar = self.vs_plot.toolbar  # TESTING!
@@ -593,7 +593,6 @@ class results_panel:
             width=450, 
             height=100, 
             name='exp_plot',
-            tooltips=[('exp (s)', '$y{0}'), ('λ (nm)', '$x{0}')], 
             y_range=(min(results.data['exposure'])*.8, 
             nanpercentile(results.data['exposure'], 50))
         )
@@ -630,7 +629,6 @@ class results_panel:
             toolbar_location=None,
             width=500, 
             height=100, 
-            tooltips=[('count (ADU/px)', '$y{0}'), ('λ (nm)', '$x{0}')], 
             y_axis_type='log', 
             sizing_mode='scale_width'
         )
@@ -682,18 +680,19 @@ class results_panel:
         elif etc.target == 'signal_noise_ratio':
             self.exp_plot.visible = False
 
-        # CURRENTLY BROKEN (x doesn't update) -- FIX!!
-        #res.create_data(Tap(model=None, x=res.wavelength.location))
+
         results.on_change('data', lambda attr, old, new: self.create_data(Tap(model=None, x=self.vs_wavelength.location)))
+
+        self.reload()
 
 
     def reload(self):
         if exp.target.value == 'signal to noise ratio':
             self.new_source.data = {'x': linspace(exp.exposure_min.value, exp.exposure_max.value, 100) if exp.exposure_max.value > exp.exposure_min.value else linspace(0, 7200, 100), 'y':[0]*100}
             self.create_data(Tap(model=None, x=self.vs_wavelength.location))
-            self.vs_plot.xaxis.axis_label = 'exposure (s)'
+            self.vs_plot.xaxis.axis_label = 'exposure ('+exp.units.value+')'
             self.vs_plot.yaxis.axis_label = 'Signal to Noise Ratio'
-            self.vs_plot.tools[-2].tooltips=[('S/N', '$y{0.00}'), ('exp (s)', '$x{0}')]  # Second to last tool = HoverTool
+            #self.vs_plot.tools[-2].tooltips=[('y', '$y{0.00}'), ('x', '$x{0}')]  # Second to last tool = HoverTool
             self.exp_plot.visible = False
             self.snr_plot.visible = True
             #page_loaded()
@@ -702,7 +701,7 @@ class results_panel:
             self.create_data(Tap(model=None, x=self.vs_wavelength.location))
             self.vs_plot.xaxis.axis_label = 'Signal to Noise Ratio'
             self.vs_plot.yaxis.axis_label = 'exposure (s)'
-            self.vs_plot.tools[-2].tooltips=[('exp (s)', '$y{0}'), ('S/N', '$x{0.00}')]
+            #self.vs_plot.tools[-2].tooltips=[('y', '$y{0}'), ('x', '$x{0.00}')]
             if self.exp_plot.visible and not isnan(etc.exposure[0].value).all():
                 self.exp_plot.y_range.start = min(etc.exposure[0].value)*.8
                 self.exp_plot.y_range.end = nanpercentile(etc.exposure[0].value, 50)
