@@ -5,6 +5,8 @@
   file_upload: Upload a custom spectrum in either ASCII.ECSV or FITS file formats, including properly specified units in the header
 
   exposure_input: Individual exposure time, select range of values with min and max
+
+  snr_input: Specify S/N over entire slit
   
   calculation_target: Specify whether you wish to calculate exposure time or SNR
 

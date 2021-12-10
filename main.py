@@ -171,6 +171,9 @@ class exposure_panel:
         self.exposure_active_flag = False
         self.exposure_min.value = (self.exposure_min.value * u.Unit(old)).to(new).value
         self.exposure_max.value = (self.exposure_max.value * u.Unit(old)).to(new).value
+        self.exposure_slider.start = self.exposure_min.value
+        self.exposure_slider.end = self.exposure_max.value
+        self.exposure_slider.step = (self.exposure_slider.end - self.exposure_slider.start) / 100
         self.exposure_slider.value = (self.exposure_slider.value * u.Unit(old)).to(new).value
         self.exposure_slider.title = 'Exposure ['+new+']'
         self.exposure_active_flag = True
@@ -202,6 +205,7 @@ class exposure_panel:
             self.contents.children = new_contents
         update_results()
         res.reload()
+        js.page_loaded()
 
 
     def __init__(self):
@@ -237,7 +241,7 @@ class exposure_panel:
         # Create elements to calculate snr
         self.snr_min = Spinner(title='Min:', value=0, low=0, width=100, sizing_mode='scale_width', step=5)
         self.snr_max = Spinner(title='Max:', value=1, low=0, width=100, sizing_mode='scale_width', step=5)
-        self.snr_slider = Slider(start=0, end=1, value=0, step=1, title='Signal to Noise Ratio', width=100, sizing_mode='scale_width')
+        self.snr_slider = Slider(start=0, end=1, value=0, step=1, title='Signal to Noise Ratio', width=100, sizing_mode='scale_width', css_classes=['snr_input'])
         if etc.target == 'exposure':
             self.snr_max.value = etc.signal_noise_ratio[0].value * 2
             self.snr_slider.end = self.snr_max.value
@@ -249,9 +253,9 @@ class exposure_panel:
         self.snr = column(self.snr_slider, row(self.snr_min, self.snr_max, sizing_mode='scale_width'), sizing_mode = 'scale_width')
 
         # Dithers
-        self.dithers = quantity_input('dithers', 'Dithers:', etc.dithers.value, low=1, width=150)
-        self.repeats = quantity_input('repeats', 'Repeats:', etc.repeats.value, low=1, width=150)
-        self.coadds = quantity_input('coadds', 'Coadds:', etc.coadds.value, low=1, width=150)
+        self.dithers = quantity_input('dithers', 'Dithers:', etc.dithers.value, low=1, width=150, css_classes=['dithers_input'])
+        self.repeats = quantity_input('repeats', 'Repeats:', etc.repeats.value, low=1, width=150, css_classes=['repeats_input'])
+        self.coadds = quantity_input('coadds', 'Coadds:', etc.coadds.value, low=1, width=150, css_classes=['coadds_input'])
         self.reads = dropdown_input('reads', 'Reads:', str(int(etc.reads.value)), [str(x) for x in etc.config.reads_options], width=150, css_classes=['reads_input'])
         
         if etc.target == 'signal_noise_ratio':
@@ -300,11 +304,11 @@ class source_panel:
     def load(self):
         self.title = section_title('Source')
 
-        self.types = Select(title='Source Type:', value=vars(etc.source.config.source_types)[etc.source.type].name, options=[vars(etc.source.config.source_types)[source].name for source in etc.source.available_types], width=300, sizing_mode='scale_width')
+        self.types = Select(title='Source Type:', value=vars(etc.source.config.source_types)[etc.source.type].name, options=[vars(etc.source.config.source_types)[source].name for source in etc.source.available_types], width=300, css_classes=['source_type'], sizing_mode='scale_width')
         self.types.on_change('value', self.type_callback)
         
         self.band = dropdown_input('source.wavelength_band', 'Band:', etc.source.wavelength_band,
-                              list(vars(etc.source.config.wavelength_bands).keys()), width=100)
+                              list(vars(etc.source.config.wavelength_bands).keys()), width=100, css_classes=['wavelength_band'])
 
         u.add_enabled_units([etc.source.flam, etc.source.photlam])
 
@@ -316,13 +320,13 @@ class source_panel:
             unit_default=str(etc.source.brightness.unit),
             equivalency=u.spectral_density(u.Quantity(vars(etc.source.config.wavelength_bands)[self.band.contents.children[0].value]))+
             etc.source.spectral_density_vega(u.Quantity(vars(etc.source.config.wavelength_bands)[self.band.contents.children[0].value])),
-            width=200
+            width=200, css_classes=['flux_units']
         )
         # Add wavelength_band to brightness_row for sizing purposes
         self.brightness.contents.children.append(self.band.contents)
 
         # Define other inputs...
-        self.redshift = quantity_input('source.redshift', 'Redshift:', etc.source.redshift.value)
+        self.redshift = quantity_input('source.redshift', 'Redshift:', etc.source.redshift.value, css_classes=['redshift_input'])
         self.width = quantity_input('source.width', 'Line Width:', etc.source.width.value, ['Angstrom', 'nm', 'um', 'mm'], str(etc.source.width.unit), low=0)
         # To include options for fahrenheit and rankine, need 'u.imperial.enable()' in here and ETC.py... check w/ Sherry!
         self.temperature = quantity_input('source.temperature', 'Temperature:', etc.source.temperature.value, ['K', 'deg_C'], str(etc.source.temperature.unit), equivalency=u.temperature())
