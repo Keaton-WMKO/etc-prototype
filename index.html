@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+    <head>
+    
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1" id="viewport-meta" />
+        
+        <title>WMKO ETC</title>
+
+        <link rel='icon' type='image/x-icon' href='static/favicon.ico'>
+        <link rel='stylesheet' href='styles.css'>
+
+        <!-- Custom element definitions -->
+        <script type='text/javascript' src='modules/input-label.js'></script>
+        <script type='text/javascript' src='modules/input-spin.js'></script>
+        <script type='text/javascript' src='modules/input-select.js'></script>
+        <script type='text/javascript' src='modules/input-slider.js'></script>
+        <script type='text/javascript' src='modules/input-file.js'></script>
+        <script type='text/javascript' src='modules/output-number.js'></script>
+        <script type='text/javascript' src='modules/cookie-message.js'></script>
+
+        <!-- Import Bokeh js -->
+        <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-2.4.2.min.js" crossorigin="anonymous"></script>
+        <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-gl-2.4.2.min.js" crossorigin="anonymous"></script>
+        <script type="text/javascript" src="https://cdn.bokeh.org/bokeh/release/bokeh-api-2.4.2.min.js" crossorigin="anonymous"></script>
+
+        <!-- Main javascript code for app functionality -->
+        <script type='text/javascript' src='script.js'></script>
+
+    </head>
+
+    <body>
+        <section>
+            <div class='title-bar'>
+                <div class="instrument-menu">
+                    <div class='instrument'>LRIS</div>
+                    <div class='instrument selected'>NIRES</div>
+                    <div class='instrument'>DEIMOS</div>
+                    <div class='instrument'>HIRES</div>
+                    <div class='instrument'>NIRC2</div>
+                    <div class='instrument'>KCWI</div>
+                    <div class='instrument'>ESI</div>
+                    <div class='instrument'>OSIRIS</div>
+                </div>
+                <button id='reset' type='button'>Reset Calculator</button>
+            </div>
+            
+            <div class='row'>
+                <div class='main'>
+                    <div class="row">
+                        <div class="panel">
+
+                            <div class='section-title'>Exposure</div>
+
+                            <div class='input-row'>
+                                <input-select label='Calculation Target' id='target'></input-select>
+                            </div>
+
+                            <div class='input-row' style='margin-bottom: 0.5vw;'>
+                                <input-slider id='exposure'>Exposure</input-slider>
+                            </div>
+
+                            <div class='input-row' style='margin-top: 0;'>
+                                <input-spin min=0 id='exposure-min'>Min</input-spin>
+                                <input-spin min=0 id='exposure-max'>Max</input-spin>
+                                <input-select id='exposure-unit'>
+                                    <option>s</option>
+                                    <option>min</option>
+                                    <option>hr</option>
+                                </input-select>
+                            </div>
+
+                            <div class='input-row' style='margin-bottom: 0.5vw;'>
+                                <input-slider min='0' max='20' value='10' id='signal-noise-ratio'>Signal to Noise Ratio</input-slider>
+                            </div>
+
+                            <div class='input-row' style='margin-top: 0;'>
+                                <input-spin min=0 value=0 id='signal-noise-ratio-min'>Min</input-spin>
+                                <input-spin min=0 value=20 id='signal-noise-ratio-max'>Max</input-spin>
+                            </div>
+
+                            <div class='input-row'>
+                                <input-spin min=1 value=1 id=dithers>Dithers</input-spin>
+                                <input-spin min=1 value=1 id=repeats>Repeats</input-spin>
+                            </div>
+
+                            <div class='input-row'>
+                                <input-spin min=1 value=1 id=coadds>Coadds</input-spin>
+                                <input-select label='Reads' id=reads></input-select>
+                            </div>
+
+                        </div>
+                        <div class="panel" id=source>
+                            <div class='section-title'>Source</div>
+                            
+                            <div class='input-row'>
+                                <input-select label='Source Type' id='type'></input-select>
+                            </div>
+
+                            <div class='input-row'>
+                                <input-spin value=18 id=flux>Flux</input-spin>
+                                <input-select label='&nbsp;' id=flux-unit>
+                                    <option value='mag(AB)'>mag(AB)</option>
+                                </input-select>
+                                <input-select label='Band' id=wavelength-band>
+                                    <option value='K'>K</option>
+                                </input-select>
+                            </div>
+
+                            <div class='input-row'>
+                                <input-spin value=2 id=redshift>Redshift</input-spin>
+                            </div>
+
+                            <div class='input-row'>
+                                <input-spin value=200 id=width>Line Width</input-spin>
+                                <input-select value=nm min=0 id=width-unit>
+                                    <option>Angstrom</option>
+                                    <option>nm</option>
+                                    <option value=um>&#x03bc;m</option>
+                                    <option>mm</option>
+                                </input-select>
+                            </div>
+
+                            <div class='input-row'>
+                                <input-spin value=5000 id=temperature>Temperature</input-spin>
+                                <input-select value=Kelvin id=temperature-unit>
+                                    <option>Kelvin</option>
+                                    <option>Celsius</option>
+                                    <option>Fahrenheit</option>
+                                    <option>Rankine</option>
+                                </input-select>
+                            </div>
+
+                            <div clas='input-row'>
+                                <input-spin value=-2 id=index>Power Index</input-spin>
+                            </div>
+
+                            <div class='input-row'>
+                                <input-file id=file-upload>Upload spectrum</input-file>
+                            </div>
+
+                        </div>
+                        <div class='panel' id=instrument>
+                            <div class='section-title'>Instrument</div>
+                            
+                            <div class='input-row'>
+                                <input-select label='Mode' id='mode'>
+                                    <option>spectroscopic</option>
+                                </input-select>
+                            </div>
+                            <div class='input-row'>
+                                <input-select label='Slit' id=slit>
+                                    <option value='[0.55arcsec,18arcsec]'>0.55" x 18"</option>
+                                </input-select>
+                            </div>
+
+                            <div class='input-row'>
+                                <input-select label='Grating' id=grating></input-select>
+                            </div>
+
+                            <div class='input-row'>
+                                <input-select label='Filter' id=filter></input-select>
+                            </div>
+
+                            <div class='input-row'>
+                                <input-select label='Grism' id=grism></input-select>
+                            </div>
+
+                            <div class='input-row'>
+                                <input-select label='Binning' id=binning>
+                                    <option value='[1,1]'>1x1</option>
+                                </input-select>
+                            </div>
+
+                        </div>
+                        <div class="panel" id=atmosphere>
+                            <div class='section-title'>Atmosphere</div>
+                            
+                            <div class='input-row'>
+                                <input-spin min=0 value=0.8 step=0.1 id=seeing>Seeing</input-spin>
+                                <input-select id=seeing-unit>
+                                    <option>arcsec</option>
+                                </input-select>
+                            </div>
+
+                            <div class='input-row'>
+                                <input-spin min=1 max=2 step=0.1 value=1.2 id=airmass>Airmass</input-spin>
+                            </div>
+
+                            <div class='input-row'>
+                                <input-spin min=1 max=5 step=0.1 value=1.6 id=water-vapor>Water Vapor</input-spin>
+                                <input-select id=water-vapor-unit>
+                                    <option>mm</option>
+                                    <option>cm</option>
+                                </input-select>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class='panel output loading' id='output-plots'>
+                        <div class=loading-overlay>
+                            <img src=static/loading_symbol.svg alt='loading symbol'>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class='sidebar'>
+                    <div class='panel output loading'>
+                        <div class=loading-overlay>
+                            <img src=static/loading_symbol.svg alt='loading symbol'>
+                        </div>
+                        <div class='sticky-container'>
+                            <div class='section-title'>Results</div>
+                            <div class='output-container'>
+                                <output-number id=output-exposure unit=s>exposure</output-number>
+                                <output-number id=output-signal-noise-ratio>S/N</output-number>
+                                <output-number id=output-wavelengths unit=&#x00B5;m>wavelength</output-number>
+                                <output-number id=output-source-flux unit=flam>source flux</output-number>
+                                <output-number id=output-clock-time unit=s>clock time</output-number>
+                                <output-number id=output-efficiency>efficiency</output-number>
+                            </div>
+                            <button id=download type=button>Download Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Text content below main app -->
+            <article id='instructions' >
+                <h2>ETC Instructions</h2>
+            </article>
+            <article id='bug-report' >
+                <a href='https://github.com/Keaton-Blair/etc-prototype/issues/new/choose' target=_blank>
+                    <p>To report a bug or request a feature, click here</p>
+                </a>
+            </article>
+
+        </section>
+
+        <!-- Floating content is defined here -->
+        <cookie-message></cookie-message>
+        <a class='scroll-to-top' href='#'>&#x2B9D;</a>
+
+    </body>
+
+
+</html>

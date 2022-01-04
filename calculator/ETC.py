@@ -133,11 +133,13 @@ class exposure_time_calculator:
             self.dark_current_count_adu = [dark_current_rate / slit_size_pixels * exp * number_exposures / self.instrument.gain for exp in self.exposure] * (u.adu/u.pixel)
             self.read_noise_count_adu = ([[(read_noise / slit_size_pixels * number_exposures / self.instrument.gain).to(u.adu/u.pixel).value] * len(self.wavelengths)] * len(self.exposure)) * (u.adu/u.pixel)
 
-
-
         else:
-            # Check that exposure and S/N have not both been provided
+            # Check that etc has a valid target set
             raise ValueError('ERROR: In ETC -- target must be set to "exposure" or "signal_noise_ratio"')
+
+        # Save clock time, efficiency
+        self.clock_time = self.integration_time * NaN
+        self.efficiency = self.integration_time / self.clock_time
 
 
     def __init__(self):
@@ -163,7 +165,7 @@ class exposure_time_calculator:
         # Calculate default wavelengths array from min, max of instrument and atmosphere
         min_wavelength = max(self.atmosphere._wavelength_index[0], self.instrument.min_wavelength)
         max_wavelength = min(self.atmosphere._wavelength_index[-1], self.instrument.max_wavelength)
-        self.wavelengths = linspace(min_wavelength, max_wavelength, self.config.defaults.default_wavelengths_number)
+        self.wavelengths = linspace(min_wavelength, max_wavelength, self.config.defaults.default_wavelengths_number).to(u.angstrom)
 
         self._calculate()
 
@@ -234,7 +236,6 @@ class exposure_time_calculator:
                     value = [value]
                 elif not isinstance(value, list):
                     value = list(value)
-                # TODO -- only allow wavelengths within bounds
                 self.wavelengths = [u.Quantity(x).to(u.angstrom) for x in value] * u.angstrom
             elif name == 'exposure':
                 if isinstance(value, str):
@@ -257,25 +258,53 @@ class exposure_time_calculator:
             self._calculate()
 
     def get_parameters(self):
+        # Define method to format data
+        def construct_parameters(obj, names):
+            parameters = {}
+            for name in names:
+                if isinstance(vars(obj)[name], u.Quantity):
+                    if vars(obj)[name].size > 1:
+                        parameters[name] = { 'value': vars(obj)[name].value.tolist() }
+                    else:
+                        parameters[name] = { 'value': vars(obj)[name].value }
+                    if vars(obj)[name].unit != u.dimensionless_unscaled:
+                        parameters[name]['unit'] = str(vars(obj)[name].unit)
+                else:
+                    parameters[name] = { 'value': vars(obj)[name]}
+                if name+'_options' in vars(obj.config).keys():
+                    options = vars(obj.config)[name+'_options']
+                    if isinstance(options, list):
+                        if isinstance(options[0], list):
+                            parameters[name]['options'] = [ {'value': [u.Quantity(option[0]).value, u.Quantity(option[1]).value]} for option in options ]
+                            if u.Quantity(options[0][0]).unit != u.dimensionless_unscaled:
+                                parameters[name]['unit'] = str(u.Quantity(options[0][0]).unit)
+                        else:
+                            parameters[name]['options'] = [ {'value': option} for option in options ]
+                    else:
+                        parameters[name]['options'] = [ {'value': x} for x in vars(options).keys()]
+            return parameters
 
-        parameters = {
-            'dithers': str(self.dithers),
-            'reads': str(self.reads),
-            'repeats': str(self.repeats),
-            'coadds': str(self.coadds),
-            'atmosphere.seeing': str(self.atmosphere.seeing),
-            'atmosphere.airmass': str(self.atmosphere.airmass),
-            'atmosphere.water_vapor': str(self.atmosphere.water_vapor)
-        }
+        # Add self parameters
+        parameters = construct_parameters(self, ['dithers', 'reads', 'repeats', 'coadds'])
+        parameters['target'] = {'value': self.target, 'options': [{'value':'signal_noise_ratio', 'name':'Signal to Noise Ratio'}, {'value':'exposure','name':'Exposure'}]}
         if self.target == 'signal_noise_ratio':
-            parameters['exposure'] = [str(exp)+'s' for exp in self.exposure.to(u.s).value]
+            parameters['exposure'] = {'value': self.exposure.value.tolist(), 'unit': str(self.exposure.unit)}
         elif self.target == 'exposure':
-            parameters['signal_noise_ratio'] = self.signal_noise_ratio.value
+            parameters['signal_noise_ratio'] = {'value': self.signal_noise_ratio.value.tolist()}
 
-        for parameter in self.source.active_parameters:
-            parameters['source.'+parameter] = str(vars(self.source)[parameter])
+        # Add parameters for atmosphere, source, instrument
+        parameters.update(construct_parameters(self.atmosphere, ['seeing', 'airmass', 'water_vapor']))
+        parameters.update(construct_parameters(self.source, self.source.active_parameters))
+        parameters.update(construct_parameters(self.instrument, self.instrument.active_parameters))
+        # Update source type
+        parameters['type']['options'] = [{'value': x, 'name': vars(self.source.config.source_types)[x].name} 
+                                        if 'name' in vars(vars(self.source.config.source_types)[x]).keys() 
+                                        else {'value': x} for x in self.source.available_types]
+        # Update instrument slit
+        for slit in parameters['slit']['options']:
+            slit['name'] = f'{slit["value"][0]}" x {slit["value"][1]}"'
+        if self.instrument.config.custom_slits:
+            parameters['slit']['options'] += [{'value': 'Custom'}]
 
-        for parameter in self.instrument.active_parameters:
-            parameters['instrument.'+parameter] = str(vars(self.instrument)[parameter])
 
         return parameters
